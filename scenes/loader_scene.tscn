@@ -22,12 +22,12 @@ glow_enabled = true
 environment = SubResource("Environment_qbilp")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 10)
+transform = Transform3D(-1, -1.75025e-15, -8.74228e-08, -2.40046e-08, 0.961564, 0.27458, 8.40626e-08, 0.27458, -0.961564, 0, 7, -22)
 script = ExtResource("1_erxpk")
 metadata/move_speed = 5.0
 metadata/turn_speed = 1.571
 
 [node name="YlandScene" type="Node3D" parent="."]
 script = ExtResource("1_5prb0")
-metadata/blockdef_file = "res://resources/from_ylands/ylands_blockdef_2025_02.json"
+metadata/blockdef_file = "res://resources/from_ylands/blockdef_2025_02.json"
 metadata/scene_file = "res://resources/from_ylands/scene_ref.json"
