@@ -14,6 +14,9 @@ sky_material = SubResource("ProceduralSkyMaterial_2it81")
 [sub_resource type="Environment" id="Environment_qbilp"]
 background_mode = 2
 sky = SubResource("Sky_idqro")
+ambient_light_source = 2
+ambient_light_color = Color(0.27451, 0.27451, 0.27451, 1)
+reflected_light_source = 2
 tonemap_mode = 2
 ssao_enabled = true
 glow_enabled = true
