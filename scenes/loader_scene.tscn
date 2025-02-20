@@ -1,0 +1,33 @@
+[gd_scene load_steps=6 format=3 uid="uid://dvkiq4ierq3q8"]
+
+[ext_resource type="Script" path="res://scripts/YlandsLoader.cs" id="1_5prb0"]
+[ext_resource type="Script" path="res://scripts/CameraController.cs" id="1_erxpk"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2it81"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_idqro"]
+sky_material = SubResource("ProceduralSkyMaterial_2it81")
+
+[sub_resource type="Environment" id="Environment_qbilp"]
+background_mode = 2
+sky = SubResource("Sky_idqro")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="LoaderScene" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_qbilp")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 10)
+script = ExtResource("1_erxpk")
+metadata/move_speed = 5.0
+metadata/turn_speed = 1.571
+
+[node name="YlandScene" type="Node3D" parent="."]
+script = ExtResource("1_5prb0")
+metadata/blockdef_file = "res://resources/from_ylands/ylands_blockdef_2025_02.json"
+metadata/scene_file = "res://resources/from_ylands/scene_ref.json"
