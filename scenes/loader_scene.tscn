@@ -5,6 +5,7 @@
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2it81"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_bottom_color = Color(0, 0.290196, 0, 1)
 ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
 
 [sub_resource type="Sky" id="Sky_idqro"]
@@ -14,12 +15,17 @@ sky_material = SubResource("ProceduralSkyMaterial_2it81")
 background_mode = 2
 sky = SubResource("Sky_idqro")
 tonemap_mode = 2
+ssao_enabled = true
 glow_enabled = true
 
 [node name="LoaderScene" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_qbilp")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.694658, -0.546174, 0.468128, 0, 0.650774, 0.759271, -0.71934, 0.527434, -0.452066, 0, 15, 0)
+shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(-1, -1.75025e-15, -8.74228e-08, -2.40046e-08, 0.961564, 0.27458, 8.40626e-08, 0.27458, -0.961564, 0, 7, -22)
