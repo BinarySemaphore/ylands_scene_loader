@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://bhs0yxv8dnhis"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2lber"]
+resource_local_to_scene = true
+
+[sub_resource type="SphereMesh" id="SphereMesh_3j78w"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_2lber")
+radial_segments = 8
+rings = 4
+
+[node name="YlandsBall" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.075, 0, 0, 0, 0.075, 0, 0, 0, 0.075, 0, 0.0169436, 0)
+mesh = SubResource("SphereMesh_3j78w")

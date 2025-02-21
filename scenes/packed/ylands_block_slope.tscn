@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://cxfxek1kytj7x"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jbgcu"]
+resource_local_to_scene = true
+
+[sub_resource type="PrismMesh" id="PrismMesh_hjkyu"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_jbgcu")
+left_to_right = 1.0
+
+[node name="YlandsBlockSlope" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.375, 0, 0, 0, 0.375, 0, 0, 0, 0.375, 0, 0, 0)
+mesh = SubResource("PrismMesh_hjkyu")

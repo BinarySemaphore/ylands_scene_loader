@@ -1,8 +1,6 @@
 using Godot;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,14 +8,26 @@ public class YlandStandards
 {
 	static public float std_unit = 0.375f;
 	static public float std_half_unit = 0.1875f;
+	
+	static public Dictionary<string, PackedScene> shape_lookup = new Dictionary<string, PackedScene>();
+	static public Dictionary<string, PackedScene> type_lookup = new Dictionary<string, PackedScene>();
+
+	static public void Preload() {
+		string base_dir = "res://scenes/packed/";
+
+		YlandStandards.shape_lookup["STANDARD"] = GD.Load<PackedScene>(base_dir + "ylands_block_std.tscn");
+		YlandStandards.shape_lookup["SLOPE"] = GD.Load<PackedScene>(base_dir + "ylands_block_slope.tscn");
+
+		YlandStandards.type_lookup["MUSKET BALL"] = GD.Load<PackedScene>(base_dir + "ylands_type_musket_ball.tscn");
+	}
 }
 
-public class YlandBlock
+public class YlandBlockDef
 {
-	public int id {get; set;}
-	public string material {get; set;}
-	public string shape {get; set;}
+	public string type {get; set;}
 	public List<int> size {get; set;}
+	public string shape {get; set;}
+	public string material {get; set;}
 	public List<List<float>> colors {get; set;}
 	[JsonPropertyName("bb-center-offset")]
 	public List<float> bb_center_offset {get; set;}
@@ -25,12 +35,11 @@ public class YlandBlock
 	public List<float> bb_dimensions {get; set;}
 }
 
-public class YlandScene
+public class YlandSceneItem
 {
 	public string type {get; set;}
 	public string name {get; set;}
-	[JsonPropertyName("block-ref")]
-	public string block_ref {get; set;}
+	public string blockdef {get; set;}
 	public List<float> position {get; set;}
 	public List<float> rotation {get; set;}
 	public List<List<float>> colors {get; set;}
@@ -38,29 +47,32 @@ public class YlandScene
 	public List<float> bb_center_offset {get; set;}
 	[JsonPropertyName("bb-dimensions")]
 	public List<float> bb_dimensions {get; set;}
-	public Dictionary<string, YlandScene> children {get; set;}
+	public Dictionary<string, YlandSceneItem> children {get; set;}
 }
 
 public partial class YlandsLoader : Node3D
 {
 	public bool load;
-	public Dictionary<string, YlandBlock> blocks;
-	public Dictionary<string, YlandScene> scene;
+	public Dictionary<string, YlandBlockDef> blocks;
+	public Dictionary<string, YlandSceneItem> scene;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		string blockdef_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("blockdef_file"));
-		string scene_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("scene_file"));
-
-		string raw_data = File.ReadAllText(blockdef_file);
+		string raw_data;
 		JsonSerializerOptions options = new() {
 			PropertyNameCaseInsensitive = true
 		};
-		this.blocks = JsonSerializer.Deserialize<Dictionary<string, YlandBlock>>(raw_data, options);
+		
+		string blockdef_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("blockdef_file"));
+		string scene_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("scene_file"));
 
+		raw_data = File.ReadAllText(blockdef_file);
+		this.blocks = JsonSerializer.Deserialize<Dictionary<string, YlandBlockDef>>(raw_data, options);
 		raw_data = File.ReadAllText(scene_file);
-		this.scene = JsonSerializer.Deserialize<Dictionary<string, YlandScene>>(raw_data, options);
+		this.scene = JsonSerializer.Deserialize<Dictionary<string, YlandSceneItem>>(raw_data, options);
+
+		YlandStandards.Preload();
 
 		this.load = true;
 	}
@@ -74,7 +86,7 @@ public partial class YlandsLoader : Node3D
 		}
 	}
 
-	public void BuildScene(Node3D parent, Dictionary<string, YlandScene> root) {
+	public void BuildScene(Node3D parent, Dictionary<string, YlandSceneItem> root) {
 		Quaternion parent_inv_rotation = parent.Quaternion.Inverse();
 		Node3D new_block = null;
 
@@ -90,12 +102,11 @@ public partial class YlandsLoader : Node3D
 		}
 	}
 
-	public Node3D GetNodeFromItem(YlandScene item) {
+	public Node3D GetNodeFromItem(YlandSceneItem item) {
 		Node3D node = null;
-		MeshInstance3D mesh;
 
 		if (item.type == "entity") {
-			node = this.CreateNewEntityFromRef(item.block_ref);
+			node = this.CreateNewEntityFromRef(item.blockdef);
 			if (node != null) {
 				if (item.colors != null && item.colors.Count >= 1) this.SetEntityColor(node, item.colors[0]);
 			}
@@ -108,14 +119,14 @@ public partial class YlandsLoader : Node3D
 		if (node != null) {
 			node.Name = item.name;
 			node.Position = new Vector3(
-				-item.position[0],
+				item.position[0],
 				item.position[1],
-				item.position[2]
+				-item.position[2]
 			);
 			node.RotationDegrees = new Vector3(
-				item.rotation[0],
+				-item.rotation[0],
 				-item.rotation[1],
-				-item.rotation[2]
+				item.rotation[2]
 			);
 
 			if (item.children != null && item.children.Count > 0) this.BuildScene(node, item.children);
@@ -132,45 +143,36 @@ public partial class YlandsLoader : Node3D
 			GD.Print($"No block reference for \"{ref_key}\"");
 			return null;
 		}
-		YlandBlock block_ref = this.blocks[ref_key];
+		YlandBlockDef block_ref = this.blocks[ref_key];
 
-		if (block_ref.shape == "STANDARD") {
-			node = new Node3D();
-			mesh = new MeshInstance3D {
-				Name = "Mesh",
-				Mesh = new BoxMesh() {
-					Size = new Vector3(
-						YlandStandards.std_unit,
-						YlandStandards.std_unit,
-						YlandStandards.std_unit
-					),
-					Material = new StandardMaterial3D()
-				},
-				Position = new Vector3(
-					-block_ref.bb_center_offset[0] / block_ref.size[0],
-					block_ref.bb_center_offset[1] / block_ref.size[1],
-					block_ref.bb_center_offset[2] / block_ref.size[2]
-				)
-			};
+		if (YlandStandards.shape_lookup.ContainsKey(block_ref.shape)) {
+			node = YlandStandards.shape_lookup[block_ref.shape].InstantiateOrNull<Node3D>();
+			if (node == null) return null;
+
+			mesh = node.GetChildOrNull<MeshInstance3D>(0);
+			if (mesh == null) {
+				node.QueueFree();
+				return null;
+			}
+
+			mesh.Scale = new Vector3(
+				YlandStandards.std_unit,
+				YlandStandards.std_unit,
+				YlandStandards.std_unit
+			);
+			mesh.Position = new Vector3(
+				block_ref.bb_center_offset[0] / block_ref.size[0],
+				block_ref.bb_center_offset[1] / block_ref.size[1],
+				-block_ref.bb_center_offset[2] / block_ref.size[2]
+			);
 			node.Scale = new Vector3(
 				block_ref.size[0],
 				block_ref.size[1],
 				block_ref.size[2]
 			);
-			node.AddChild(mesh);
-		} else if (block_ref.shape == "UNDEFINED") {
-			if (ref_key == "MUSKET BALL 0x0x0") {
-				node = new Node3D();
-				mesh = new MeshInstance3D {
-					Name = "Mesh",
-					Mesh = new SphereMesh {
-						Radius = 0.05f,
-						Height = 0.1f,
-						Material = new StandardMaterial3D()
-					}
-				};
-				node.AddChild(mesh);
-			}
+		} else if (YlandStandards.type_lookup.ContainsKey(block_ref.type)) {
+			node = YlandStandards.type_lookup[block_ref.type].InstantiateOrNull<Node3D>();
+			if (node == null) return null;
 		}
 
 		if (node != null) {
