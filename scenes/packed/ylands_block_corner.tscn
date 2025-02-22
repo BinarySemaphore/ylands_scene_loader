@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://cr5egxnc3yjxk"]
+
+[ext_resource type="ArrayMesh" uid="uid://hew7d0wppu78" path="res://resources/models/simple_corner.obj" id="1_t0qn5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kboxd"]
+resource_local_to_scene = true
+
+[node name="YlandsBlockSlope" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.375, 0, -3.27835e-08, 0, 0.375, 0, 3.27835e-08, 0, -0.375, 0, 0, 0)
+mesh = ExtResource("1_t0qn5")
+surface_material_override/0 = SubResource("StandardMaterial3D_kboxd")

@@ -17,6 +17,8 @@ public class YlandStandards
 
 		YlandStandards.shape_lookup["STANDARD"] = GD.Load<PackedScene>(base_dir + "ylands_block_std.tscn");
 		YlandStandards.shape_lookup["SLOPE"] = GD.Load<PackedScene>(base_dir + "ylands_block_slope.tscn");
+		YlandStandards.shape_lookup["CORNER"] = GD.Load<PackedScene>(base_dir + "ylands_block_corner.tscn");
+		YlandStandards.shape_lookup["SPIKE"] = GD.Load<PackedScene>(base_dir + "ylands_block_spike.tscn");
 
 		YlandStandards.type_lookup["MUSKET BALL"] = GD.Load<PackedScene>(base_dir + "ylands_type_musket_ball.tscn");
 	}
@@ -33,6 +35,16 @@ public class YlandBlockDef
 	public List<float> bb_center_offset {get; set;}
 	[JsonPropertyName("bb-dimensions")]
 	public List<float> bb_dimensions {get; set;}
+
+	
+	override public string ToString() {
+		string output = "";
+		JsonSerializerOptions options = new() {
+			WriteIndented = true
+		};
+		output = $"<YlandBlockDef: {JsonSerializer.Serialize(this, options)}>";
+		return output;
+	}
 }
 
 public class YlandSceneItem
@@ -177,6 +189,8 @@ public partial class YlandsLoader : Node3D
 
 		if (node != null) {
 			if (block_ref.colors != null && block_ref.colors.Count >= 1) this.SetEntityColor(node, block_ref.colors[0]);
+		} else {
+			GD.Print($"Unsupported Entity: {block_ref:s}");
 		}
 
 		return node;
@@ -185,7 +199,11 @@ public partial class YlandsLoader : Node3D
 	public void SetEntityColor(Node3D entity, List<float> color) {
 		MeshInstance3D mesh = entity.GetChildOrNull<MeshInstance3D>(0);
 		if (mesh == null || color.Count < 3) return;
-		StandardMaterial3D mat = (StandardMaterial3D)((PrimitiveMesh)mesh.Mesh).Material;
+
+		StandardMaterial3D mat = (StandardMaterial3D)mesh.GetSurfaceOverrideMaterial(0);
+		mat ??= (StandardMaterial3D)mesh.Mesh.SurfaceGetMaterial(0);
+		if (mat == null) return;
+
 		mat.AlbedoColor = new Color(
 			color[0],
 			color[1],
