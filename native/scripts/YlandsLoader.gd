@@ -39,7 +39,7 @@ func _build_scene(parent: Node3D, root: Dictionary) -> void:
 		
 		parent.add_child(new_block)
 
-func _get_node_from_item(item: Dictionary):
+func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null
 	
 	if item['type'] == "entity":
@@ -73,7 +73,7 @@ func _create_new_entity_from_ref(ref_key: String) -> Node3D:
 	var mesh: MeshInstance3D
 	
 	if ref_key not in blocks:
-		print("No blocks reference for \"%s\"" % ref_key)
+		print("No block reference for \"%s\"" % ref_key)
 		return null
 	var block_ref = blocks[ref_key]
 	
