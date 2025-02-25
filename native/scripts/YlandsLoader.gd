@@ -1,6 +1,8 @@
 extends Node3D
 
 var load_scene: bool
+var unsupported_draw: bool
+var unsupported_transparency: float
 var blocks: Dictionary
 var scene: Dictionary
 
@@ -9,6 +11,8 @@ func _ready() -> void:
 	var raw_data: String
 	var blockdef_file = get_meta("blockdef_file")
 	var scene_file = get_meta("scene_file")
+	unsupported_draw = get_meta("box_draw_unsupported", true)
+	unsupported_transparency = get_meta("unsupported_transparency", 0.5)
 	
 	raw_data = FileAccess.get_file_as_string(blockdef_file)
 	blocks = JSON.parse_string(raw_data)
@@ -105,6 +109,24 @@ func _create_new_entity_from_ref(ref_key: String) -> Node3D:
 			block_ref['size'][1],
 			block_ref['size'][2]
 		)
+	elif unsupported_draw:
+		node = Node3D.new()
+		mesh = MeshInstance3D.new()
+		mesh.mesh = BoxMesh.new()
+		mesh.mesh.material = StandardMaterial3D.new()
+		mesh.mesh.material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh.mesh.material.albedo_color = Color(0, 0, 0, unsupported_transparency)
+		mesh.mesh.size = Vector3(
+			block_ref['bb-dimensions'][0],
+			block_ref['bb-dimensions'][1],
+			block_ref['bb-dimensions'][2]
+		)
+		mesh.position = Vector3(
+			block_ref['bb-center-offset'][0],
+			block_ref['bb-center-offset'][1],
+			-block_ref['bb-center-offset'][2]
+		)
+		node.add_child(mesh)
 	
 	if node:
 		if block_ref.has('colors') and block_ref['colors'].size() >= 1:
@@ -122,7 +144,12 @@ func _set_entity_color(entity: Node3D, color: Array) -> void:
 	mat = mat if mat else mesh.mesh.surface_get_material(0)
 	if not mat: return
 	
-	mat.albedo_color = Color(color[0], color[1], color[2])
+	mat.albedo_color = Color(
+		color[0],
+		color[1],
+		color[2],
+		mat.albedo_color.a
+	)
 	if color.size() > 3 and color[3] > 0.001:
 		mat.emission_enabled = true
 		mat.emission = Color(

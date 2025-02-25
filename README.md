@@ -23,5 +23,9 @@ Supports windows of various sizes as an example for using custom OBJ files
 1. Enter path for another scene JSON file for `Scene File`
   > Tip: In Godot you can right click a file in `Filesystem` and `Copy Path`
 
+* Other Options in `YlandScene` node
+  * `Box Draw Unsupported`: Toggle on/off (default: on) to draw boxes using blockdef bounding box dimensions
+  * `Unsupported Transparency`: 0.0 to 1.0 (default 0.5); if `Box Draw Unsupported` on, sets transparency of boxes; 0 being invisible, 1 being opaque
+
 ## Related Ylands Export Project
 [Ylands Export Project](https://github.com/BinarySemaphore/ylands_exporter)

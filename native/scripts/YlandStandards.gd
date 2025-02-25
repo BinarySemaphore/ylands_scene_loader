@@ -21,3 +21,4 @@ static func preload_lookups() -> void:
 	YlandStandards.id_lookup['2756'] = load(base_dir + "ylands_block_glass_window_2x2x1_2756.tscn")
 	YlandStandards.id_lookup['5617'] = load(base_dir + "ylands_block_glass_window_2x4x1_5617.tscn")
 	YlandStandards.id_lookup['5618'] = load(base_dir + "ylands_block_glass_window_4x4x1_5618.tscn")
+	YlandStandards.id_lookup['3978'] = load(base_dir + "ylands_ship_hull_wooden_large_3978.tscn")

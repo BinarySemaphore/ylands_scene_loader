@@ -40,3 +40,5 @@ metadata/turn_speed = 1.571
 script = ExtResource("1_5prb0")
 metadata/blockdef_file = "res://resources/from_ylands/blockdef_2025_02.json"
 metadata/scene_file = "res://resources/from_ylands/scene_ref.json"
+metadata/box_draw_unsupported = true
+metadata/unsupported_transparency = 0.5

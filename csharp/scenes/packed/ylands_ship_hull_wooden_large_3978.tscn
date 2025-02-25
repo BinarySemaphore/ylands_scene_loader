@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://xswjvwclr5o0"]
+
+[ext_resource type="ArrayMesh" uid="uid://vr7en76b33k2" path="res://resources/models/vehicle/ship_wood_large.obj" id="1_sgf47"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uvgq5"]
+resource_local_to_scene = true
+
+[node name="YlandsBlockSlope" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -1.50996e-07, 0, 1, 0, 1.50996e-07, 0, -1, 0, 0, 0)
+mesh = ExtResource("1_sgf47")
+surface_material_override/0 = SubResource("StandardMaterial3D_uvgq5")

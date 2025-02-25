@@ -27,6 +27,7 @@ public class YlandStandards
 		YlandStandards.id_lookup["2756"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x2x1_2756.tscn");
 		YlandStandards.id_lookup["5617"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x4x1_5617.tscn");
 		YlandStandards.id_lookup["5618"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_4x4x1_5618.tscn");
+		YlandStandards.id_lookup["3978"] = GD.Load<PackedScene>(base_dir + "ylands_ship_hull_wooden_large_3978.tscn");
 	}
 }
 
@@ -71,6 +72,8 @@ public class YlandSceneItem
 public partial class YlandsLoader : Node3D
 {
 	public bool load;
+	public bool unsupported_draw;
+	public float unsupported_transparency;
 	public Dictionary<string, YlandBlockDef> blocks;
 	public Dictionary<string, YlandSceneItem> scene;
 
@@ -84,6 +87,8 @@ public partial class YlandsLoader : Node3D
 		
 		string blockdef_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("blockdef_file"));
 		string scene_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("scene_file"));
+		this.unsupported_draw = (bool)this.GetMeta("box_draw_unsupported", true);
+		this.unsupported_transparency = (float)this.GetMeta("unsupported_transparency", 0.5f);
 
 		raw_data = File.ReadAllText(blockdef_file);
 		this.blocks = JsonSerializer.Deserialize<Dictionary<string, YlandBlockDef>>(raw_data, options);
@@ -190,6 +195,27 @@ public partial class YlandsLoader : Node3D
 				block_ref.size[1],
 				block_ref.size[2]
 			);
+		} else if (this.unsupported_draw) {
+			node = new Node3D();
+			mesh = new MeshInstance3D {
+				Mesh = new BoxMesh {
+					Material = new StandardMaterial3D {
+						Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+						AlbedoColor = new Color(0, 0, 0, this.unsupported_transparency)
+					},
+					Size = new Vector3(
+						block_ref.bb_dimensions[0],
+						block_ref.bb_dimensions[1],
+						block_ref.bb_dimensions[2]
+					)
+				},
+				Position = new Vector3(
+					block_ref.bb_center_offset[0],
+					block_ref.bb_center_offset[1],
+					-block_ref.bb_center_offset[2]
+				)
+			};
+			node.AddChild(mesh);
 		}
 
 		if (node != null) {
@@ -212,7 +238,8 @@ public partial class YlandsLoader : Node3D
 		mat.AlbedoColor = new Color(
 			color[0],
 			color[1],
-			color[2]
+			color[2],
+			mat.AlbedoColor.A
 		);
 		if (color.Count > 3 && color[3] > 0.001f) {
 			mat.EmissionEnabled = true;
