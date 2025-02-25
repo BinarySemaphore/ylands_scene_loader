@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3 uid="uid://dvkiq4ierq3q8"]
+
+[ext_resource type="Script" path="res://scripts/CameraController.gd" id="1_np387"]
+[ext_resource type="Script" path="res://scripts/YlandsLoader.gd" id="2_gry7x"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2it81"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_bottom_color = Color(1.45596e-06, 0.290631, 1.44392e-07, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_idqro"]
+sky_material = SubResource("ProceduralSkyMaterial_2it81")
+
+[sub_resource type="Environment" id="Environment_qbilp"]
+background_mode = 2
+sky = SubResource("Sky_idqro")
+ambient_light_source = 2
+ambient_light_color = Color(0.273873, 0.273873, 0.273873, 1)
+reflected_light_source = 2
+tonemap_mode = 2
+ssao_enabled = true
+glow_enabled = true
+
+[node name="LoaderScene" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_qbilp")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.694482, -0.546205, 0.468353, -1.49012e-08, 0.650933, 0.759135, -0.71951, 0.527206, -0.452062, 0, 15, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, 22)
+script = ExtResource("1_np387")
+metadata/move_speed = 5.0
+metadata/turn_speed = 1.571
+
+[node name="YlandScene" type="Node3D" parent="."]
+script = ExtResource("2_gry7x")
+metadata/blockdef_file = "res://resources/from_ylands/blockdef_2025_02.json"
+metadata/scene_file = "res://resources/from_ylands/scene_ref.json"

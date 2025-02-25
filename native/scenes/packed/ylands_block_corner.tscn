@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://cr5egxnc3yjxk"]
+[gd_scene load_steps=3 format=3 uid="uid://chajjsew3mo54"]
 
-[ext_resource type="ArrayMesh" uid="uid://hew7d0wppu78" path="res://resources/models/simple_corner.obj" id="1_t0qn5"]
+[ext_resource type="ArrayMesh" uid="uid://c1j54hsk2dj0l" path="res://resources/models/standard/simple_corner.obj" id="1_t0qn5"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kboxd"]
 resource_local_to_scene = true

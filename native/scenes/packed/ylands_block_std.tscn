@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://bc1rio8h6erc8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rga0w"]
+resource_local_to_scene = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_nkh20"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_rga0w")
+
+[node name="YlandsBlockStd" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.375, 0, 0, 0, 0.375, 0, 0, 0, 0.375, 0, 0, 0)
+mesh = SubResource("BoxMesh_nkh20")

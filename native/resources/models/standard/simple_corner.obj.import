@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://c1j54hsk2dj0l"
+path="res://.godot/imported/simple_corner.obj-896c7f5e3e14bde5136b855dbce87cba.mesh"
+
+[deps]
+
+files=["res://.godot/imported/simple_corner.obj-896c7f5e3e14bde5136b855dbce87cba.mesh"]
+
+source_file="res://resources/models/standard/simple_corner.obj"
+dest_files=["res://.godot/imported/simple_corner.obj-896c7f5e3e14bde5136b855dbce87cba.mesh", "res://.godot/imported/simple_corner.obj-896c7f5e3e14bde5136b855dbce87cba.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

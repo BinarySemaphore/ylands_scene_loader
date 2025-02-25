@@ -11,6 +11,7 @@ public class YlandStandards
 	
 	static public Dictionary<string, PackedScene> shape_lookup = new Dictionary<string, PackedScene>();
 	static public Dictionary<string, PackedScene> type_lookup = new Dictionary<string, PackedScene>();
+	static public Dictionary<string, PackedScene> id_lookup = new Dictionary<string, PackedScene>();
 
 	static public void Preload() {
 		string base_dir = "res://scenes/packed/";
@@ -21,6 +22,11 @@ public class YlandStandards
 		YlandStandards.shape_lookup["SPIKE"] = GD.Load<PackedScene>(base_dir + "ylands_block_spike.tscn");
 
 		YlandStandards.type_lookup["MUSKET BALL"] = GD.Load<PackedScene>(base_dir + "ylands_type_musket_ball.tscn");
+
+		YlandStandards.id_lookup["3966"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_1x1x1_3966.tscn");
+		YlandStandards.id_lookup["2756"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x2x1_2756.tscn");
+		YlandStandards.id_lookup["5617"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x4x1_5617.tscn");
+		YlandStandards.id_lookup["5618"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_4x4x1_5618.tscn");
 	}
 }
 
@@ -123,9 +129,7 @@ public partial class YlandsLoader : Node3D
 				if (item.colors != null && item.colors.Count >= 1) this.SetEntityColor(node, item.colors[0]);
 			}
 		} else if (item.type == "group") {
-			node = new Node3D {
-				Name = item.name
-			};
+			node = new Node3D();
 		}
 
 		if (node != null) {
@@ -157,7 +161,11 @@ public partial class YlandsLoader : Node3D
 		}
 		YlandBlockDef block_ref = this.blocks[ref_key];
 
-		if (YlandStandards.shape_lookup.ContainsKey(block_ref.shape)) {
+		if (YlandStandards.id_lookup.ContainsKey(ref_key)) {
+			node = YlandStandards.id_lookup[ref_key].Instantiate<Node3D>();
+		} else if (YlandStandards.type_lookup.ContainsKey(block_ref.type)) {
+			node = YlandStandards.type_lookup[block_ref.type].InstantiateOrNull<Node3D>();
+		} else if (YlandStandards.shape_lookup.ContainsKey(block_ref.shape)) {
 			node = YlandStandards.shape_lookup[block_ref.shape].InstantiateOrNull<Node3D>();
 			if (node == null) return null;
 
@@ -182,9 +190,6 @@ public partial class YlandsLoader : Node3D
 				block_ref.size[1],
 				block_ref.size[2]
 			);
-		} else if (YlandStandards.type_lookup.ContainsKey(block_ref.type)) {
-			node = YlandStandards.type_lookup[block_ref.type].InstantiateOrNull<Node3D>();
-			if (node == null) return null;
 		}
 
 		if (node != null) {

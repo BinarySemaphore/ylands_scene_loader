@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://dao4k5e7m7xu"]
 
-[ext_resource type="ArrayMesh" uid="uid://dnxtcqx6u8yaf" path="res://resources/models/simple_spike.obj" id="1_t0qn5"]
+[ext_resource type="ArrayMesh" uid="uid://dnxtcqx6u8yaf" path="res://resources/models/standard/simple_spike.obj" id="1_t0qn5"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xldsd"]
 resource_local_to_scene = true

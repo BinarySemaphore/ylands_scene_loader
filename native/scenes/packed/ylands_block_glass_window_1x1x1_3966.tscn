@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://bcawyd3rlve3n"]
+
+[ext_resource type="ArrayMesh" uid="uid://cgh3q5hqswguc" path="res://resources/models/window/window_1x1x1.obj" id="1_81len"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kboxd"]
+resource_local_to_scene = true
+
+[node name="YlandsBlockSlope" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -1.50996e-07, 0, 1, 0, 1.50996e-07, 0, -1, 0, 0, 0)
+mesh = ExtResource("1_81len")
+surface_material_override/0 = SubResource("StandardMaterial3D_kboxd")
