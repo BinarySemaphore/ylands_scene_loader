@@ -31,17 +31,33 @@ func _process(_delta: float) -> void:
 
 func _build_scene(parent: Node3D, root: Dictionary) -> void:
 	var parent_inv_rotation = parent.quaternion.inverse()
-	var new_block: Node3D = null
+	var node: Node3D
+	var mesh
 	
 	for key in root:
-		new_block = _get_node_from_item(root[key])
-		if not new_block: continue
+		node = _get_node_from_item(root[key])
+		if not node: continue
 		
-		new_block.name = "[%s] %s" % [key, new_block.name]
-		new_block.position = parent_inv_rotation * (new_block.position - parent.position)
-		new_block.quaternion = parent_inv_rotation * new_block.quaternion
+		mesh = node.get_child(0)
+		if mesh and is_instance_of(mesh, MeshInstance3D):
+			print(mesh.mesh.surface_get_arrays(0))
+		'''
+		Intercept node here:
+		- Get a surface uid and add to batch mesh.
+		  - Material doesn't matter, only color albido/emission right now.
+		- If batch mesh can't accept more, then add batch mesh to parent
+		and start new batch mesh with node data.
+		- If batch mesh can accept more, add to batch mesh and continue
+		without adding to parent.
+		- Either way, mark node for death.
+		- If loop exits, need check for batch mesh to add to parent
+		'''
 		
-		parent.add_child(new_block)
+		node.name = "[%s] %s" % [key, node.name]
+		node.position = parent_inv_rotation * (node.position - parent.position)
+		node.quaternion = parent_inv_rotation * node.quaternion
+		
+		parent.add_child(node)
 
 func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null
@@ -160,3 +176,20 @@ func _set_entity_color(entity: Node3D, color: Array) -> void:
 		mat.emission_energy_multiplier = color[3] * 20
 		mat.rim_enabled = true
 		mat.rim = 1
+
+func create_mesh() -> ArrayMesh:
+	# RenderingServer.MAX_MESH_SURFACES
+	var test = ArrayMesh.new()
+	var vertices = PackedVector3Array()
+	vertices.push_back(Vector3(0, 1, 0))
+	vertices.push_back(Vector3(1, 0, 0))
+	vertices.push_back(Vector3(0, 0, 1))
+
+	# Initialize the ArrayMesh.
+	var arrays = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+
+	# Create the Mesh.
+	test.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return test
