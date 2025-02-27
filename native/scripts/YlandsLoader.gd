@@ -54,7 +54,7 @@ func _build_scene(parent: Node3D, root: Dictionary) -> void:
 			if not combo_mesh.append(node):
 				parent.add_child(combo_mesh.commit_to_mesh(), true)
 				combo_mesh.append(node)
-			ComboMesh.immidiate_free_node_and_children(node)
+			ComboMesh.immediate_free_node_and_children(node)
 	
 	# Ignore this (if reviewing as simple example - combo_mesh is an advanced feature)
 	if combine_mesh:

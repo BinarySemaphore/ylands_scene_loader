@@ -47,13 +47,13 @@ func append(node: Node3D) -> bool:
 		local_normals[index] = norm
 	
 	if color_uid not in _cmesh:
-		# Create new surface
+		# Add new surface data
 		_cmesh[color_uid] = [
 			surface_data,
 			YlandStandards.get_entity_surface_material(node)
 		]
 	else:
-		# Add to existing surface
+		# Add to existing surface data
 		var vert_count_orig = 0
 		for index in range(_cmesh[color_uid][0].size()):
 			if index >= surface_data.size(): break
@@ -69,10 +69,10 @@ func append(node: Node3D) -> bool:
 	
 	return true
 
-func commit_to_mesh(id: int = 0) -> MeshInstance3D:
-	if not _cmesh: return null
+func commit_to_mesh(id: int = -1) -> MeshInstance3D:
+	if _surface_count == 0: return null
 	
-	# Create the actual combined mesh and add to node
+	# Create the actual mesh
 	var new_mesh = ArrayMesh.new()
 	var mesh_flags = Mesh.ARRAY_VERTEX | Mesh.ARRAY_NORMAL | Mesh.ARRAY_TANGENT | Mesh.ARRAY_FORMAT_TEX_UV | Mesh.ARRAY_INDEX
 	var data: Array
@@ -89,7 +89,7 @@ func commit_to_mesh(id: int = 0) -> MeshInstance3D:
 	mesh_container.mesh = new_mesh
 	mesh_container.position = Vector3.ZERO
 	mesh_container.quaternion = Quaternion.IDENTITY
-	if id:
+	if id > -1:
 		mesh_container.name = "[%d] Combined Mesh" % id
 	else:
 		mesh_container.name = "Combined Mesh"
@@ -110,12 +110,12 @@ func _get_entity_color_uid(entity: Node3D) -> String:
 	
 	return color_uid
 
-static func immidiate_free_node_and_children(node: Node) -> void:
+static func immediate_free_node_and_children(node: Node) -> void:
 	var child: Node
 	for index in range(node.get_child_count()):
 		child = node.get_child(index)
 		if not child or child.is_queued_for_deletion(): continue
-		ComboMesh.immidiate_free_node_and_children(child)
+		ComboMesh.immediate_free_node_and_children(child)
 	# Handle material override free issue: https://github.com/godotengine/godot/issues/85817
 	if is_instance_of(node, MeshInstance3D):
 		for index in range(node.get_surface_override_material_count()):

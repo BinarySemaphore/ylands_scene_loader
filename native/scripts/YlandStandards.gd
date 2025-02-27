@@ -53,6 +53,5 @@ static func get_entity_surface_material(entity: Node3D) -> StandardMaterial3D:
 	
 	mat = mesh.get_surface_override_material(0)
 	mat = mat if mat else mesh.mesh.surface_get_material(0)
-	if not mat: return null
 	
 	return mat
