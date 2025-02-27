@@ -53,7 +53,7 @@ func _build_scene(parent: Node3D, root: Dictionary) -> void:
 				parent.add_child(node)
 				continue
 			elif status == 0:
-				_add_single_mesh_to_parent(parent, combo_mesh)
+				parent.add_child(_combo_mesh_to_node(combo_mesh))
 				combo_mesh = {}
 				status = _add_to_combo_mesh(combo_mesh, node)
 				if status != 1:
@@ -63,7 +63,7 @@ func _build_scene(parent: Node3D, root: Dictionary) -> void:
 			parent.add_child(node)
 	
 	if combine_mesh:
-		_add_single_mesh_to_parent(parent, combo_mesh)
+		parent.add_child(_combo_mesh_to_node(combo_mesh))
 
 func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null
@@ -263,7 +263,7 @@ func _add_to_combo_mesh(combo: Dictionary, node: Node3D) -> int:
 	
 	return 1
 
-func _add_single_mesh_to_parent(parent: Node3D, combo: Dictionary) -> void:
+func _combo_mesh_to_node(combo: Dictionary) -> Node3D:
 	if not combo: return
 	var node = Node3D.new()
 	node.position = Vector3.ZERO
@@ -286,7 +286,7 @@ func _add_single_mesh_to_parent(parent: Node3D, combo: Dictionary) -> void:
 		index += 1
 	mesh_container.mesh = new_mesh
 	node.add_child(mesh_container)
-	parent.add_child(node)
+	return node
 
 func _immidiate_free_node_and_children(node: Node) -> void:
 	var child: Node
@@ -299,20 +299,3 @@ func _immidiate_free_node_and_children(node: Node) -> void:
 		for index in range(node.get_surface_override_material_count()):
 			node.set_surface_override_material(index, null)
 	node.free()
-
-func create_mesh() -> ArrayMesh:
-	# RenderingServer.MAX_MESH_SURFACES
-	var test = ArrayMesh.new()
-	var vertices = PackedVector3Array()
-	vertices.push_back(Vector3(0, 1, 0))
-	vertices.push_back(Vector3(1, 0, 0))
-	vertices.push_back(Vector3(0, 0, 1))
-
-	# Initialize the ArrayMesh.
-	var arrays = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-
-	# Create the Mesh.
-	test.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return test
