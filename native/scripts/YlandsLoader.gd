@@ -1,8 +1,10 @@
 extends Node3D
 
 var load_scene: bool
+var combine_mesh: bool
 var unsupported_draw: bool
 var unsupported_transparency: float
+var cm_count: int
 var blocks: Dictionary
 var scene: Dictionary
 
@@ -13,6 +15,7 @@ func _ready() -> void:
 	var scene_file = get_meta("scene_file")
 	unsupported_draw = get_meta("box_draw_unsupported", true)
 	unsupported_transparency = get_meta("unsupported_transparency", 0.5)
+	combine_mesh = get_meta("mesh_combine_similar", false)
 	
 	raw_data = FileAccess.get_file_as_string(blockdef_file)
 	blocks = JSON.parse_string(raw_data)
@@ -22,6 +25,7 @@ func _ready() -> void:
 	YlandStandards.preload_lookups()
 	
 	load_scene = true
+	cm_count = 0
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -30,34 +34,36 @@ func _process(_delta: float) -> void:
 		load_scene = false
 
 func _build_scene(parent: Node3D, root: Dictionary) -> void:
-	var parent_inv_rotation = parent.quaternion.inverse()
 	var node: Node3D
-	var mesh
+	var status: int
+	var combo_mesh = {}
+	var parent_inv_rotation = parent.quaternion.inverse()
 	
 	for key in root:
 		node = _get_node_from_item(root[key])
 		if not node: continue
 		
-		mesh = node.get_child(0)
-		if mesh and is_instance_of(mesh, MeshInstance3D):
-			print(mesh.mesh.surface_get_arrays(0))
-		'''
-		Intercept node here:
-		- Get a surface uid and add to batch mesh.
-		  - Material doesn't matter, only color albido/emission right now.
-		- If batch mesh can't accept more, then add batch mesh to parent
-		and start new batch mesh with node data.
-		- If batch mesh can accept more, add to batch mesh and continue
-		without adding to parent.
-		- Either way, mark node for death.
-		- If loop exits, need check for batch mesh to add to parent
-		'''
-		
 		node.name = "[%s] %s" % [key, node.name]
 		node.position = parent_inv_rotation * (node.position - parent.position)
 		node.quaternion = parent_inv_rotation * node.quaternion
 		
-		parent.add_child(node)
+		if combine_mesh:
+			status = _add_to_combo_mesh(combo_mesh, node)
+			if status == -1:
+				parent.add_child(node)
+				continue
+			elif status == 0:
+				_add_single_mesh_to_parent(parent, combo_mesh)
+				combo_mesh = {}
+				status = _add_to_combo_mesh(combo_mesh, node)
+				if status != 1:
+					assert(false, "Shouldn't be able to reach this; something very wrong happened")
+			_immidiate_free_node_and_children(node)
+		else:
+			parent.add_child(node)
+	
+	if combine_mesh:
+		_add_single_mesh_to_parent(parent, combo_mesh)
 
 func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null
@@ -153,11 +159,8 @@ func _create_new_entity_from_ref(ref_key: String) -> Node3D:
 	return node
 
 func _set_entity_color(entity: Node3D, color: Array) -> void:
-	var mesh = entity.get_child(0) as MeshInstance3D
-	if not mesh or color.size() < 3: return
-	
-	var mat: StandardMaterial3D = mesh.get_surface_override_material(0)
-	mat = mat if mat else mesh.mesh.surface_get_material(0)
+	if color.size() < 3: return
+	var mat = _get_entity_surface_material(entity)
 	if not mat: return
 	
 	mat.albedo_color = Color(
@@ -176,6 +179,126 @@ func _set_entity_color(entity: Node3D, color: Array) -> void:
 		mat.emission_energy_multiplier = color[3] * 20
 		mat.rim_enabled = true
 		mat.rim = 1
+
+func _get_entity_color_uid(entity: Node3D) -> String:
+	var color_uid = ""
+	var mat = _get_entity_surface_material(entity)
+	if not mat: return ""
+	
+	color_uid += mat.albedo_color.to_html()
+	if mat.emission_enabled:
+		color_uid += " e:" + mat.emission.to_html()
+	
+	return color_uid
+
+func _get_entity_surface_material(entity: Node3D) -> StandardMaterial3D:
+	var mat: StandardMaterial3D = null
+	
+	var mesh = entity.get_child(0) as MeshInstance3D
+	if not mesh: return null
+	
+	mat = mesh.get_surface_override_material(0)
+	mat = mat if mat else mesh.mesh.surface_get_material(0)
+	if not mat: return null
+	
+	return mat
+
+func _add_to_combo_mesh(combo: Dictionary, node: Node3D) -> int:
+	'''
+	Return status: <int> -1: invalid | 0: combo full | 1: success
+	'''
+	var check_child: Node
+	var mesh: MeshInstance3D
+	
+	# Check if valid mesh containing node
+	check_child = node.get_child(0)
+	if not check_child or not is_instance_of(check_child, MeshInstance3D): return -1
+	mesh = check_child
+	if not mesh.mesh: return -1
+	
+	var color_uid = _get_entity_color_uid(node)
+	if not color_uid: return -1
+	
+	# Check if combined mesh is full
+	if not color_uid in combo and combo.size() == RenderingServer.MAX_MESH_SURFACES:
+		return 0
+	
+	# Apply node transform to local verts and normals
+	var vert: Vector3
+	var norm: Vector3
+	var surface_data = mesh.mesh.surface_get_arrays(0)
+	var local_verts = surface_data[Mesh.ARRAY_VERTEX]
+	var local_normals = surface_data[Mesh.ARRAY_NORMAL]
+	for index in range(local_verts.size()):
+		vert = local_verts[index]
+		norm = local_normals[index]
+		vert *= mesh.scale
+		vert = mesh.quaternion * vert
+		vert += mesh.position
+		vert *= node.scale
+		vert = node.quaternion * vert
+		vert += node.position
+		norm = node.quaternion * mesh.quaternion * norm
+		local_verts[index] = vert
+		local_normals[index] = norm
+	
+	if color_uid not in combo:
+		# Create new surface
+		combo[color_uid] = [
+			surface_data,
+			_get_entity_surface_material(node)
+		]
+	else:
+		# Add to existing surface
+		var vert_count_orig = 0
+		for index in range(combo[color_uid][0].size()):
+			if index >= surface_data.size(): break
+			if not surface_data[index]: continue
+			if index == Mesh.ARRAY_VERTEX:
+				vert_count_orig = combo[color_uid][0][index].size()
+			if index == Mesh.ARRAY_INDEX and vert_count_orig:
+				for mindex in range(surface_data[index].size()):
+					surface_data[index][mindex] += vert_count_orig
+			combo[color_uid][0][index].append_array(surface_data[index])
+	
+	return 1
+
+func _add_single_mesh_to_parent(parent: Node3D, combo: Dictionary) -> void:
+	if not combo: return
+	var node = Node3D.new()
+	node.position = Vector3.ZERO
+	node.quaternion = Quaternion.IDENTITY
+	node.name = "[%d] Combined Mesh" % cm_count
+	cm_count += 1
+	
+	# Create the actual combined mesh and add to node
+	var mesh_container = MeshInstance3D.new()
+	var new_mesh = ArrayMesh.new()
+	var mesh_flags = Mesh.ARRAY_VERTEX | Mesh.ARRAY_NORMAL | Mesh.ARRAY_TANGENT | Mesh.ARRAY_FORMAT_TEX_UV | Mesh.ARRAY_INDEX
+	var data: Array
+	var mat: StandardMaterial3D
+	var index = 0
+	for key in combo:
+		data = combo[key][0]
+		mat = combo[key][1]
+		new_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, data, [], {}, mesh_flags)
+		new_mesh.surface_set_material(index, mat)
+		index += 1
+	mesh_container.mesh = new_mesh
+	node.add_child(mesh_container)
+	parent.add_child(node)
+
+func _immidiate_free_node_and_children(node: Node) -> void:
+	var child: Node
+	for index in range(node.get_child_count()):
+		child = node.get_child(index)
+		if not child or child.is_queued_for_deletion(): continue
+		_immidiate_free_node_and_children(child)
+	# Handle material override free issue: https://github.com/godotengine/godot/issues/85817
+	if is_instance_of(node, MeshInstance3D):
+		for index in range(node.get_surface_override_material_count()):
+			node.set_surface_override_material(index, null)
+	node.free()
 
 func create_mesh() -> ArrayMesh:
 	# RenderingServer.MAX_MESH_SURFACES
