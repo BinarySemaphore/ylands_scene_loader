@@ -27,7 +27,7 @@ glow_enabled = true
 environment = SubResource("Environment_qbilp")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.694658, 0.546174, -0.468128, 0, 0.650774, 0.759271, 0.71934, -0.527434, 0.452066, 0, 15, 0)
+transform = Transform3D(-0.694658, -0.546174, 0.468128, 0, 0.650774, 0.759271, -0.71934, 0.527434, -0.452066, 0, 15, 0)
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
@@ -42,3 +42,4 @@ metadata/blockdef_file = "res://resources/from_ylands/blockdef_2025_02.json"
 metadata/scene_file = "res://resources/from_ylands/scene_ref.json"
 metadata/box_draw_unsupported = true
 metadata/unsupported_transparency = 0.5
+metadata/mesh_combine_similar = false
