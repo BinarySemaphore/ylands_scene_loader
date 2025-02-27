@@ -4,7 +4,6 @@ var load_scene: bool
 var combine_mesh: bool
 var unsupported_draw: bool
 var unsupported_transparency: float
-var cm_count: int
 var blocks: Dictionary
 var scene: Dictionary
 
@@ -25,7 +24,6 @@ func _ready() -> void:
 	YlandStandards.preload_lookups()
 	
 	load_scene = true
-	cm_count = 0
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -54,14 +52,13 @@ func _build_scene(parent: Node3D, root: Dictionary) -> void:
 				parent.add_child(node)
 				continue
 			if not combo_mesh.append(node):
-				parent.add_child(combo_mesh.commit_to_node(), true)
+				parent.add_child(combo_mesh.commit_to_mesh(), true)
 				combo_mesh.append(node)
 			ComboMesh.immidiate_free_node_and_children(node)
 	
 	# Ignore this (if reviewing as simple example - combo_mesh is an advanced feature)
 	if combine_mesh:
-		parent.add_child(combo_mesh.commit_to_node(), true)
-		cm_count += 1
+		parent.add_child(combo_mesh.commit_to_mesh(), true)
 
 func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null

@@ -65,12 +65,8 @@ func append(node: Node3D) -> bool:
 	
 	return true
 
-func commit_to_node(id: int = 0) -> MeshInstance3D:
+func commit_to_mesh(id: int = 0) -> MeshInstance3D:
 	if not cmesh: return null
-	#var node = Node3D.new()
-	#node.position = Vector3.ZERO
-	#node.quaternion = Quaternion.IDENTITY
-	#node.name = "[%d] Combined Mesh" % id
 	
 	# Create the actual combined mesh and add to node
 	var new_mesh = ArrayMesh.new()
@@ -94,8 +90,6 @@ func commit_to_node(id: int = 0) -> MeshInstance3D:
 	else:
 		mesh_container.name = "Combined Mesh"
 	
-	#var node = Node3D.new()
-	#node.add_child(mesh_container)
 	cmesh.clear()
 	
 	return mesh_container
