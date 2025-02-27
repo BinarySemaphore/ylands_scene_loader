@@ -32,7 +32,7 @@ Supports windows of various sizes as an example for using custom OBJ files
   * `Mesh Combine Similar`:
     * Entities within same group will be combined into single mesh separated by surface material; new mesh if max surfaces is exceeded
     * Increased loading time
-    * Improves runtime and reduces RAM used
+    * Improved runtime and reduced RAM at load and runtime (large scenes possible on mobile devices)
 
 ## Related Ylands Export Project
 [Ylands Export Project](https://github.com/BinarySemaphore/ylands_exporter)
