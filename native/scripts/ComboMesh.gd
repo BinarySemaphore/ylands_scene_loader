@@ -1,9 +1,11 @@
 class_name ComboMesh
 
-var cmesh: Dictionary
+var _surface_count: int
+var _cmesh: Dictionary
 
 func _init() -> void:
-	cmesh = {}
+	_cmesh = {}
+	_surface_count = 0
 
 func append(node: Node3D) -> bool:
 	'''
@@ -14,7 +16,7 @@ func append(node: Node3D) -> bool:
 	
 	# Check if valid mesh containing node
 	check_child = node.get_child(0)
-	if not check_child or not is_instance_of(check_child, MeshInstance3D): return -1
+	if not check_child or not is_instance_of(check_child, MeshInstance3D): return false
 	mesh = check_child
 	if not mesh.mesh: return false
 	
@@ -22,7 +24,7 @@ func append(node: Node3D) -> bool:
 	if not color_uid: return false
 	
 	# Check if combined mesh is full
-	if not color_uid in cmesh and cmesh.size() == RenderingServer.MAX_MESH_SURFACES:
+	if not color_uid in _cmesh and _surface_count == RenderingServer.MAX_MESH_SURFACES:
 		return false
 	
 	# Apply node transform to local verts and normals
@@ -44,29 +46,31 @@ func append(node: Node3D) -> bool:
 		local_verts[index] = vert
 		local_normals[index] = norm
 	
-	if color_uid not in cmesh:
+	if color_uid not in _cmesh:
 		# Create new surface
-		cmesh[color_uid] = [
+		_cmesh[color_uid] = [
 			surface_data,
 			YlandStandards.get_entity_surface_material(node)
 		]
 	else:
 		# Add to existing surface
 		var vert_count_orig = 0
-		for index in range(cmesh[color_uid][0].size()):
+		for index in range(_cmesh[color_uid][0].size()):
 			if index >= surface_data.size(): break
 			if not surface_data[index]: continue
 			if index == Mesh.ARRAY_VERTEX:
-				vert_count_orig = cmesh[color_uid][0][index].size()
+				vert_count_orig = _cmesh[color_uid][0][index].size()
 			if index == Mesh.ARRAY_INDEX and vert_count_orig:
 				for mindex in range(surface_data[index].size()):
 					surface_data[index][mindex] += vert_count_orig
-			cmesh[color_uid][0][index].append_array(surface_data[index])
+			_cmesh[color_uid][0][index].append_array(surface_data[index])
+	
+	_surface_count += 1
 	
 	return true
 
 func commit_to_mesh(id: int = 0) -> MeshInstance3D:
-	if not cmesh: return null
+	if not _cmesh: return null
 	
 	# Create the actual combined mesh and add to node
 	var new_mesh = ArrayMesh.new()
@@ -74,9 +78,9 @@ func commit_to_mesh(id: int = 0) -> MeshInstance3D:
 	var data: Array
 	var mat: StandardMaterial3D
 	var index = 0
-	for key in cmesh:
-		data = cmesh[key][0]
-		mat = cmesh[key][1]
+	for key in _cmesh:
+		data = _cmesh[key][0]
+		mat = _cmesh[key][1]
 		new_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, data, [], {}, mesh_flags)
 		new_mesh.surface_set_material(index, mat)
 		index += 1
@@ -90,7 +94,8 @@ func commit_to_mesh(id: int = 0) -> MeshInstance3D:
 	else:
 		mesh_container.name = "Combined Mesh"
 	
-	cmesh.clear()
+	_cmesh.clear()
+	_surface_count = 0
 	
 	return mesh_container
 
