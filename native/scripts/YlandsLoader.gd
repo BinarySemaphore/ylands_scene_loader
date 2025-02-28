@@ -28,7 +28,10 @@ func _ready() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	if load_scene:
+		var start_time = Time.get_ticks_usec()
 		_build_scene(self, scene)
+		var elapsed = (Time.get_ticks_usec() - start_time) / 1000.0
+		print("Load time: %.2fms" % elapsed)
 		load_scene = false
 
 func _build_scene(parent: Node3D, root: Dictionary) -> void:

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Diagnostics;
 
 public class YlandBlockDef
 {
@@ -80,7 +81,11 @@ public partial class YlandsLoader : Node3D
 	public override void _Process(double delta)
 	{
 		if (this.load_scene) {
+			Stopwatch timer = new Stopwatch();
+			timer.Start();
 			this.BuildScene(this, this.scene);
+			timer.Stop();
+			GD.Print($"Load time: {1000*timer.ElapsedTicks/Stopwatch.Frequency:f2}ms");
 			this.load_scene = false;
 		}
 	}
