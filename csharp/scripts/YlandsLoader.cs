@@ -1,35 +1,9 @@
 using Godot;
+using YlandsSceneLoader.scripts;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-public class YlandStandards
-{
-	static public float std_unit = 0.375f;
-	static public float std_half_unit = 0.1875f;
-	
-	static public Dictionary<string, PackedScene> shape_lookup = new Dictionary<string, PackedScene>();
-	static public Dictionary<string, PackedScene> type_lookup = new Dictionary<string, PackedScene>();
-	static public Dictionary<string, PackedScene> id_lookup = new Dictionary<string, PackedScene>();
-
-	static public void Preload() {
-		string base_dir = "res://scenes/packed/";
-
-		YlandStandards.shape_lookup["STANDARD"] = GD.Load<PackedScene>(base_dir + "ylands_block_std.tscn");
-		YlandStandards.shape_lookup["SLOPE"] = GD.Load<PackedScene>(base_dir + "ylands_block_slope.tscn");
-		YlandStandards.shape_lookup["CORNER"] = GD.Load<PackedScene>(base_dir + "ylands_block_corner.tscn");
-		YlandStandards.shape_lookup["SPIKE"] = GD.Load<PackedScene>(base_dir + "ylands_block_spike.tscn");
-
-		YlandStandards.type_lookup["MUSKET BALL"] = GD.Load<PackedScene>(base_dir + "ylands_type_musket_ball.tscn");
-
-		YlandStandards.id_lookup["3966"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_1x1x1_3966.tscn");
-		YlandStandards.id_lookup["2756"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x2x1_2756.tscn");
-		YlandStandards.id_lookup["5617"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_2x4x1_5617.tscn");
-		YlandStandards.id_lookup["5618"] = GD.Load<PackedScene>(base_dir + "ylands_block_glass_window_4x4x1_5618.tscn");
-		YlandStandards.id_lookup["3978"] = GD.Load<PackedScene>(base_dir + "ylands_ship_hull_wooden_large_3978.tscn");
-	}
-}
 
 public class YlandBlockDef
 {
@@ -71,7 +45,8 @@ public class YlandSceneItem
 
 public partial class YlandsLoader : Node3D
 {
-	public bool load;
+	public bool load_scene;
+	public bool combine_mesh;
 	public bool unsupported_draw;
 	public float unsupported_transparency;
 	public Dictionary<string, YlandBlockDef> blocks;
@@ -89,39 +64,59 @@ public partial class YlandsLoader : Node3D
 		string scene_file = Godot.ProjectSettings.GlobalizePath((string)this.GetMeta("scene_file"));
 		this.unsupported_draw = (bool)this.GetMeta("box_draw_unsupported", true);
 		this.unsupported_transparency = (float)this.GetMeta("unsupported_transparency", 0.5f);
+		this.combine_mesh = (bool)this.GetMeta("mesh_combine_similar", false);
 
 		raw_data = File.ReadAllText(blockdef_file);
 		this.blocks = JsonSerializer.Deserialize<Dictionary<string, YlandBlockDef>>(raw_data, options);
 		raw_data = File.ReadAllText(scene_file);
 		this.scene = JsonSerializer.Deserialize<Dictionary<string, YlandSceneItem>>(raw_data, options);
 
-		YlandStandards.Preload();
+		YlandStandards.PreloadLookups();
 
-		this.load = true;
+		this.load_scene = true;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		if (this.load) {
+		if (this.load_scene) {
 			this.BuildScene(this, this.scene);
-			this.load = false;
+			this.load_scene = false;
 		}
 	}
 
 	public void BuildScene(Node3D parent, Dictionary<string, YlandSceneItem> root) {
+		Node3D node;
+		ComboMesh combo_mesh = new ComboMesh();
 		Quaternion parent_inv_rotation = parent.Quaternion.Inverse();
-		Node3D new_block = null;
 
 		foreach (string key in root.Keys) {
-			new_block = this.GetNodeFromItem(root[key]);
-			if (new_block == null) continue;
+			node = this.GetNodeFromItem(root[key]);
+			if (node == null) continue;
 
-			new_block.Name = $"[{key}] {new_block.Name}";
-			new_block.Position = parent_inv_rotation * (new_block.Position - parent.Position);
-			new_block.Quaternion = parent_inv_rotation * new_block.Quaternion;
+			node.Name = $"[{key}] {node.Name}";
+			node.Position = parent_inv_rotation * (node.Position - parent.Position);
+			node.Quaternion = parent_inv_rotation * node.Quaternion;
 			
-			parent.AddChild(new_block);
+			if (!this.combine_mesh) {
+				parent.AddChild(node);
+			// Ignore the rest of this method (if reviewing as simple example - combo_mesh is an advanced feature)
+			} else {
+				if (root[key].type == "group") {
+					parent.AddChild(node);
+					continue;
+				}
+				if (!combo_mesh.Append(node)) {
+					parent.AddChild(combo_mesh.CommitToMesh(), true);
+					combo_mesh.Append(node);
+				}
+				ComboMesh.ImmediateFreeNodeAndChildren(node);
+			}
+		}
+
+		// Ignore this (if reviewing as simple example - combo_mesh is an advanced feature)
+		if (this.combine_mesh) {
+			parent.AddChild(combo_mesh.CommitToMesh(), true);
 		}
 	}
 
@@ -131,7 +126,7 @@ public partial class YlandsLoader : Node3D
 		if (item.type == "entity") {
 			node = this.CreateNewEntityFromRef(item.blockdef);
 			if (node != null) {
-				if (item.colors != null && item.colors.Count >= 1) this.SetEntityColor(node, item.colors[0]);
+				if (item.colors != null && item.colors.Count >= 1) YlandStandards.SetEntityColor(node, item.colors[0]);
 			}
 		} else if (item.type == "group") {
 			node = new Node3D();
@@ -219,38 +214,11 @@ public partial class YlandsLoader : Node3D
 		}
 
 		if (node != null) {
-			if (block_ref.colors != null && block_ref.colors.Count >= 1) this.SetEntityColor(node, block_ref.colors[0]);
+			if (block_ref.colors != null && block_ref.colors.Count >= 1) YlandStandards.SetEntityColor(node, block_ref.colors[0]);
 		} else {
 			GD.Print($"Unsupported Entity: {block_ref:s}");
 		}
 
 		return node;
-	}
-
-	public void SetEntityColor(Node3D entity, List<float> color) {
-		MeshInstance3D mesh = entity.GetChildOrNull<MeshInstance3D>(0);
-		if (mesh == null || color.Count < 3) return;
-
-		StandardMaterial3D mat = (StandardMaterial3D)mesh.GetSurfaceOverrideMaterial(0);
-		mat ??= (StandardMaterial3D)mesh.Mesh.SurfaceGetMaterial(0);
-		if (mat == null) return;
-
-		mat.AlbedoColor = new Color(
-			color[0],
-			color[1],
-			color[2],
-			mat.AlbedoColor.A
-		);
-		if (color.Count > 3 && color[3] > 0.001f) {
-			mat.EmissionEnabled = true;
-			mat.Emission = new Color(
-				color[0] * color[3],
-				color[1] * color[3],
-				color[2] * color[3]
-			);
-			mat.EmissionEnergyMultiplier = color[3] * 20f;
-			mat.RimEnabled = true;
-			mat.Rim = 1.0f;
-		} 
 	}
 }

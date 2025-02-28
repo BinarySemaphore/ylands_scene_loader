@@ -1,6 +1,7 @@
 extends Node3D
 
 var load_scene: bool
+var combine_mesh: bool
 var unsupported_draw: bool
 var unsupported_transparency: float
 var blocks: Dictionary
@@ -13,6 +14,7 @@ func _ready() -> void:
 	var scene_file = get_meta("scene_file")
 	unsupported_draw = get_meta("box_draw_unsupported", true)
 	unsupported_transparency = get_meta("unsupported_transparency", 0.5)
+	combine_mesh = get_meta("mesh_combine_similar", false)
 	
 	raw_data = FileAccess.get_file_as_string(blockdef_file)
 	blocks = JSON.parse_string(raw_data)
@@ -30,27 +32,41 @@ func _process(_delta: float) -> void:
 		load_scene = false
 
 func _build_scene(parent: Node3D, root: Dictionary) -> void:
+	var node: Node3D
+	var combo_mesh = ComboMesh.new()
 	var parent_inv_rotation = parent.quaternion.inverse()
-	var new_block: Node3D = null
 	
 	for key in root:
-		new_block = _get_node_from_item(root[key])
-		if not new_block: continue
+		node = _get_node_from_item(root[key])
+		if not node: continue
 		
-		new_block.name = "[%s] %s" % [key, new_block.name]
-		new_block.position = parent_inv_rotation * (new_block.position - parent.position)
-		new_block.quaternion = parent_inv_rotation * new_block.quaternion
+		node.name = "[%s] %s" % [key, node.name]
+		node.position = parent_inv_rotation * (node.position - parent.position)
+		node.quaternion = parent_inv_rotation * node.quaternion
 		
-		parent.add_child(new_block)
+		if not combine_mesh:
+			parent.add_child(node)
+		# Ignore the rest of this function (if reviewing as simple example - combo_mesh is an advanced feature)
+		else:
+			if root[key]['type'] == "group":
+				parent.add_child(node)
+				continue
+			if not combo_mesh.append(node):
+				parent.add_child(combo_mesh.commit_to_mesh(), true)
+				combo_mesh.append(node)
+			ComboMesh.immediate_free_node_and_children(node)
+	
+	# Ignore this (if reviewing as simple example - combo_mesh is an advanced feature)
+	if combine_mesh:
+		parent.add_child(combo_mesh.commit_to_mesh(), true)
 
 func _get_node_from_item(item: Dictionary) -> Node3D:
 	var node: Node3D = null
 	
 	if item['type'] == "entity":
 		node = _create_new_entity_from_ref(item['blockdef'])
-		if node:
-			if item.has('colors') and item['colors'].size() >= 1:
-				_set_entity_color(node, item['colors'][0])
+		if node and item.has('colors') and item['colors'].size() >= 1:
+			YlandStandards.set_entity_color(node, item['colors'][0])
 	elif item['type'] == "group":
 		node = Node3D.new()
 	
@@ -130,33 +146,8 @@ func _create_new_entity_from_ref(ref_key: String) -> Node3D:
 	
 	if node:
 		if block_ref.has('colors') and block_ref['colors'].size() >= 1:
-			_set_entity_color(node, block_ref['colors'][0])
+			YlandStandards.set_entity_color(node, block_ref['colors'][0])
 	else:
 		print("Unsupported Entity: %s" % block_ref)
 	
 	return node
-
-func _set_entity_color(entity: Node3D, color: Array) -> void:
-	var mesh = entity.get_child(0) as MeshInstance3D
-	if not mesh or color.size() < 3: return
-	
-	var mat: StandardMaterial3D = mesh.get_surface_override_material(0)
-	mat = mat if mat else mesh.mesh.surface_get_material(0)
-	if not mat: return
-	
-	mat.albedo_color = Color(
-		color[0],
-		color[1],
-		color[2],
-		mat.albedo_color.a
-	)
-	if color.size() > 3 and color[3] > 0.001:
-		mat.emission_enabled = true
-		mat.emission = Color(
-			color[0] * color[3],
-			color[1] * color[3],
-			color[2] * color[3]
-		)
-		mat.emission_energy_multiplier = color[3] * 20
-		mat.rim_enabled = true
-		mat.rim = 1
